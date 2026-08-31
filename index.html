@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>PokéScale - Escala Real Corregida</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-main: #0a0f1d;
+      --bg-surface: #141c2e;
+      --bg-card: #1d283f;
+      --bg-card-hover: #263554;
+      --primary: #ef4444;
+      --accent-p1: #38bdf8;
+      --accent-p2: #fbbf24;
+      --accent-human: #a78bfa;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-light: rgba(255, 255, 255, 0.1);
+      --floor-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      padding: 10px 14px;
+      background: rgba(20, 28, 46, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pokeball-logo {
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(to bottom, #ef4444 50%, #ffffff 50%);
+      border-radius: 50%;
+      border: 2px solid #0a0f1d;
+      position: relative;
+    }
+    .pokeball-logo::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      background: #ffffff;
+      border: 2px solid #0a0f1d;
+      border-radius: 50%;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .view-toggles {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+    }
+
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .toggle-btn.active {
+      background: var(--bg-card);
+      color: #fff;
+    }
+
+    /* ARENA / STAGE */
+    .arena-container {
+      position: relative;
+      flex: 1;
+      min-height: 350px;
+      max-height: 48vh;
+      background: radial-gradient(circle at 50% 25%, #1c2742 0%, #0a0f1d 100%);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 2px solid var(--floor-color);
+    }
+
+    /* REGLA MÉTRICA FIJA */
+    .fixed-ruler {
+      position: absolute;
+      top: 0;
+      bottom: 26px;
+      left: 0;
+      width: 44px;
+      pointer-events: none;
+      z-index: 20;
+      background: linear-gradient(to right, rgba(10, 15, 29, 0.9) 70%, transparent);
+      border-right: 1px dashed rgba(255, 255, 255, 0.15);
+    }
+
+    .grid-marker {
+      position: absolute;
+      left: 6px;
+      font-size: 0.65rem;
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--text-muted);
+      transform: translateY(-50%);
+      background: rgba(10, 15, 29, 0.85);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* LÍNEAS HORIZONTALES */
+    .grid-lines-layer {
+      position: absolute;
+      inset: 0;
+      bottom: 26px;
+      left: 44px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .grid-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+
+    /* ESCENARIO DE COMPARACIÓN */
+    .arena-viewport {
+      position: absolute;
+      inset: 0;
+      bottom: 26px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 12px 0 48px;
+    }
+
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr 0.65fr 1fr;
+      align-items: flex-end;
+      justify-items: center;
+      width: 100%;
+      height: 100%;
+      gap: 8px;
+      padding-bottom: 0px;
+    }
+
+    /* MODO LIBRE PANORÁMICO */
+    .arena-container.mode-free .stage-row {
+      display: flex;
+      justify-content: flex-start;
+      align-items: flex-end;
+      width: max-content;
+      min-width: 100%;
+      gap: 40px;
+      padding-right: 40px;
+    }
+
+    .entity-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* CAJA CONTENEDORA DE ALTURA REAL */
+    .visual-scaler {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+      transition: height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+
+    /* IMÁGENES POKÉMON AJUSTADAS */
+    .pokemon-sprite-wrapper {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .pokemon-img {
+      height: calc(100% * var(--trim-scale, 1));
+      width: auto;
+      max-width: none;
+      object-fit: contain;
+      transform: translateY(calc(var(--trim-offset, 0%) * 1)) var(--flip-transform, scaleX(1));
+      transform-origin: bottom center;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+      pointer-events: none;
+    }
+
+    /* SILUETA HUMANA 100% CALIBRADA (0% A 100% DE ALTO EXACTO) */
+    .human-svg {
+      height: 100%;
+      width: auto;
+      max-width: 50px;
+      fill: var(--accent-human);
+      filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.4));
+      display: block;
+    }
+
+    /* ETIQUETAS FLOTANTES */
+    .floating-tag {
+      position: absolute;
+      top: -26px;
+      padding: 3px 8px;
+      border-radius: 14px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+      background: rgba(14, 21, 37, 0.92);
+      border: 1px solid var(--border-light);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 10;
+    }
+    .floating-tag.p1 { border-color: var(--accent-p1); color: var(--accent-p1); }
+    .floating-tag.p2 { border-color: var(--accent-p2); color: var(--accent-p2); }
+    .floating-tag.human { border-color: var(--accent-human); color: var(--accent-human); }
+
+    /* SUELO */
+    .ground-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 26px;
+      background: linear-gradient(to bottom, #1e293b, #0f172a);
+      border-top: 2px solid var(--floor-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      z-index: 25;
+    }
+
+    /* INSIGHT BANNER */
+    .insight-box {
+      background: rgba(20, 28, 46, 0.75);
+      border-bottom: 1px solid var(--border-light);
+      padding: 6px 12px;
+      font-size: 0.74rem;
+      text-align: center;
+      color: #cbd5e1;
+    }
+    .insight-box strong { color: #fff; }
+
+    /* CONTROLES INFERIORES */
+    .controls-panel {
+      flex: 1;
+      padding: 12px 14px calc(env(safe-area-inset-bottom, 14px) + 8px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slots-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .slot-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slot-box.left { border-top: 3px solid var(--accent-p1); }
+    .slot-box.right { border-top: 3px solid var(--accent-p2); }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .slot-btn {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 7px 9px;
+      color: #fff;
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: capitalize;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .slot-details {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px;
+      align-items: center;
+      font-size: 0.7rem;
+      color: #cbd5e1;
+    }
+
+    .flip-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-light);
+      color: #fff;
+      border-radius: 6px;
+      width: 26px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* BARRA DE ALTURA HUMANA */
+    .human-adjust-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .human-label {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .human-slider {
+      flex: 1;
+      accent-color: var(--accent-human);
+    }
+    .human-num {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-human);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    /* PRESETS */
+    .presets-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .presets-row::-webkit-scrollbar { display: none; }
+
+    .preset-pill {
+      flex: 0 0 auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      color: #cbd5e1;
+      padding: 5px 9px;
+      border-radius: 16px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* MODAL DE BÚSQUEDA */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-card {
+      background: var(--bg-surface);
+      width: 100%;
+      height: 80vh;
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 10px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title { font-family: 'Outfit'; font-size: 1.05rem; font-weight: 700; }
+    .close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-main);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent-p1); }
+
+    .poke-results-grid {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .poke-choice-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .poke-choice-btn:active { background: var(--primary); }
+    .choice-thumb { width: 34px; height: 34px; object-fit: contain; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="pokeball-logo"></div>
+      <h1 class="brand-title">PokéScale</h1>
+    </div>
+    <div class="view-toggles">
+      <button class="toggle-btn active" id="btnFit" onclick="switchMode('fit')">📱 Ajuste</button>
+      <button class="toggle-btn" id="btnFree" onclick="switchMode('free')">🔍 Libre (1:1)</button>
+    </div>
+  </header>
+
+  <!-- ARENA COMPARADORA -->
+  <section class="arena-container mode-fit" id="arenaContainer">
+    <!-- Regla de Altura Fija a la Izquierda -->
+    <div class="fixed-ruler" id="fixedRuler"></div>
+
+    <!-- Malla de Líneas Métricas -->
+    <div class="grid-lines-layer" id="gridLinesLayer"></div>
+
+    <!-- Viewport con los 3 Elementos -->
+    <div class="arena-viewport" id="viewport">
+      <div class="stage-row" id="stageRow">
+        
+        <!-- POKÉMON IZQUIERDO -->
+        <div class="entity-column">
+          <div class="visual-scaler" id="p1Scaler">
+            <div class="floating-tag p1">
+              <span id="p1TagName">Pikachu</span> <span id="p1TagHeight">0.40m</span>
+            </div>
+            <div class="pokemon-sprite-wrapper">
+              <img class="pokemon-img" id="p1Img" src="" alt="P1" />
+            </div>
+          </div>
+        </div>
+
+        <!-- HUMANO DE REFERENCIA (100% CALIBRADO) -->
+        <div class="entity-column">
+          <div class="visual-scaler" id="humanScaler">
+            <div class="floating-tag human">
+              <span>Tú</span> <span id="humanTagHeight">1.70m</span>
+            </div>
+            <!-- SVG del Entrenador: 0 a 180px exacto sin márgenes muertos -->
+            <svg class="human-svg" viewBox="0 0 54 180" preserveAspectRatio="none">
+              <!-- Gorra / Cabeza (y: 0 a 30) -->
+              <path d="M16,10 C16,3 38,3 38,10 C44,10 52,13 54,16 C46,16 40,14 34,16 C26,14 18,16 6,16 C10,13 13,10 16,10 Z" />
+              <circle cx="27" cy="20" r="10" />
+              <!-- Cuello y Torso (y: 30 a 90) -->
+              <rect x="24" y="30" width="6" height="6" rx="2" />
+              <path d="M12,36 L42,36 L37,90 L17,90 Z" />
+              <!-- Brazos (y: 36 a 96) -->
+              <path d="M12,38 L4,72 L8,95 L5,96 L0,72 L8,36 Z" />
+              <path d="M42,38 L50,72 L46,95 L49,96 L54,72 L46,36 Z" />
+              <!-- Piernas y Calzado (y: 90 a 180 exacto) -->
+              <path d="M18,90 L15,174 L6,176 L6,180 L25,180 L24,90 Z" />
+              <path d="M36,90 L39,174 L48,176 L48,180 L29,180 L30,90 Z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- POKÉMON DERECHO -->
+        <div class="entity-column">
+          <div class="visual-scaler" id="p2Scaler">
+            <div class="floating-tag p2">
+              <span id="p2TagName">Charizard</span> <span id="p2TagHeight">1.70m</span>
+            </div>
+            <div class="pokemon-sprite-wrapper">
+              <img class="pokemon-img" id="p2Img" src="" alt="P2" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PISO -->
+    <div class="ground-bar">
+      <span>0.00 m (Suelo)</span>
+      <span id="swipeHint">↔ Escala 1:1 Calibrada</span>
+    </div>
+  </section>
+
+  <!-- BANNER DE INSIGHT COMPARATIVO -->
+  <div class="insight-box" id="insightBox">Cargando datos métricos...</div>
+
+  <!-- PANEL DE CONTROL -->
+  <main class="controls-panel">
+    
+    <!-- Slots Pokémon -->
+    <div class="slots-grid">
+      <!-- Slot 1 -->
+      <div class="slot-box left">
+        <div class="slot-header">
+          <span>Lado Izquierdo</span>
+          <span id="p1IdBadge">#025</span>
+        </div>
+        <button class="slot-btn" onclick="openSearchModal('left')">
+          <span id="p1BtnName">Pikachu</span>
+          <span>🔍</span>
+        </button>
+        <div class="slot-details">
+          <span id="p1StatDetails">📏 0.40m • 6.0kg</span>
+          <button class="flip-btn" onclick="toggleFlip('p1')">🔄</button>
+        </div>
+      </div>
+
+      <!-- Slot 2 -->
+      <div class="slot-box right">
+        <div class="slot-header">
+          <span>Lado Derecho</span>
+          <span id="p2IdBadge">#006</span>
+        </div>
+        <button class="slot-btn" onclick="openSearchModal('right')">
+          <span id="p2BtnName">Charizard</span>
+          <span>🔍</span>
+        </button>
+        <div class="slot-details">
+          <span id="p2StatDetails">📏 1.70m • 90.5kg</span>
+          <button class="flip-btn" onclick="toggleFlip('p2')">🔄</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Altura del Humano -->
+    <div class="human-adjust-bar">
+      <span class="human-label">👤 Tu Estatura:</span>
+      <input type="range" class="human-slider" id="humanRange" min="1.00" max="2.30" step="0.05" value="1.70" oninput="setHumanHeight(this.value)">
+      <span class="human-num" id="humanNumDisplay">1.70 m</span>
+    </div>
+
+    <!-- Comparaciones Rápidas -->
+    <div class="presets-row">
+      <button class="preset-pill" onclick="quickLoad('pikachu', 'charizard')">⚡ Pikachu vs 🔥 Charizard</button>
+      <button class="preset-pill" onclick="quickLoad('wailord', 'eternatus')">🐋 Wailord vs 🌌 Eternatus</button>
+      <button class="preset-pill" onclick="quickLoad('joltik', 'onix')">🕷️ Joltik vs 🪨 Onix</button>
+    </div>
+
+  </main>
+
+  <!-- MODAL DE BÚSQUEDA -->
+  <div class="modal-overlay" id="searchModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title" id="modalTitle">Elegir Pokémon</h3>
+        <button class="close-btn" onclick="closeSearchModal()">✕</button>
+      </div>
+      <input 
+        type="text" 
+        id="searchInput" 
+        class="search-input" 
+        placeholder="Buscar nombre o número (#)..." 
+        autocomplete="off"
+        oninput="filterDirectory(this.value)"
+      />
+      <div class="poke-results-grid" id="resultsGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- ESTADO GLOBAL ---
+    let directory = [];
+    let activeSlot = 'left';
+    let currentMode = 'fit';
+    let humanHeight = 1.70;
+    
+    let p1Flipped = false;
+    let p2Flipped = true; // Por defecto mirando al centro
+
+    let p1Data = { name: 'pikachu', height: 0.40, weight: 6.0, id: 25, sprite: '', trimScale: 1, trimOffset: 0 };
+    let p2Data = { name: 'charizard', height: 1.70, weight: 90.5, id: 6, sprite: '', trimScale: 1, trimOffset: 0 };
+
+    // --- INICIO ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadDirectory();
+      await fetchPokemon('pikachu', 'left');
+      await fetchPokemon('charizard', 'right');
+      window.addEventListener('resize', renderArena);
+    });
+
+    // --- CARGAR DIRECTORIO DE POKÉMON ---
+    async function loadDirectory() {
+      try {
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+        const data = await res.json();
+        directory = data.results.map((item, i) => ({
+          name: item.name,
+          id: i + 1,
+          thumb: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i + 1}.png`
+        }));
+      } catch (e) {
+        console.error("Error al cargar directorio", e);
+      }
+    }
+
+    // --- ALGORITMO CANVAS TRIMMER: RECORTA MÁRGENES TRANSPARENTES ---
+    function analyzeSpriteWhitespace(imgUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imgUrl;
+
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || 475;
+            canvas.height = img.naturalHeight || 475;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let minY = canvas.height, maxY = 0;
+            let foundPixel = false;
+
+            for (let y = 0; y < canvas.height; y++) {
+              for (let x = 0; x < canvas.width; x++) {
+                const alpha = imgData[(y * canvas.width + x) * 4 + 3];
+                if (alpha > 25) { // Píxel visible real
+                  foundPixel = true;
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                }
+              }
+            }
+
+            if (!foundPixel || minY >= maxY) {
+              resolve({ trimScale: 1, trimOffset: 0 });
+              return;
+            }
+
+            // Altura real del dibujo sin espacios vacíos
+            const drawnHeight = maxY - minY + 1;
+            const trimScale = canvas.height / drawnHeight; // Multiplicador para llenar la altura real
+            const bottomPadding = canvas.height - 1 - maxY;
+            const trimOffsetPercent = (bottomPadding / canvas.height) * 100;
+
+            resolve({ trimScale, trimOffset: trimOffsetPercent });
+          } catch (err) {
+            // Fallback en caso de bloqueo de canvas
+            resolve({ trimScale: 1.28, trimOffset: 7 });
+          }
+        };
+
+        img.onerror = () => resolve({ trimScale: 1, trimOffset: 0 });
+      });
+    }
+
+    // --- OBTENER POKÉMON DE LA POKÉAPI ---
+    async function fetchPokemon(nameOrId, slot) {
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nameOrId.toString().toLowerCase()}`);
+        if (!res.ok) throw new Error("Pokémon no encontrado");
+        const data = await res.json();
+
+        const heightM = data.height / 10; // decímetros a metros
+        const weightKg = data.weight / 10; // hectogramos a kg
+        const spriteUrl = 
+          data.sprites.other['official-artwork'].front_default ||
+          data.sprites.other['home'].front_default ||
+          data.sprites.front_default;
+
+        // Calcular recorte de márgenes transparentes
+        const { trimScale, trimOffset } = await analyzeSpriteWhitespace(spriteUrl);
+
+        const pokeObj = {
+          name: data.name,
+          height: heightM,
+          weight: weightKg,
+          id: data.id,
+          sprite: spriteUrl,
+          trimScale,
+          trimOffset
+        };
+
+        if (slot === 'left') p1Data = pokeObj;
+        else p2Data = pokeObj;
+
+        updateUI();
+        renderArena();
+      } catch (e) {
+        alert("No se pudo cargar el Pokémon.");
+      }
+    }
+
+    // --- ACTUALIZAR TEXTOS Y ESTILOS ---
+    function updateUI() {
+      // P1
+      document.getElementById('p1TagName').textContent = capitalize(p1Data.name);
+      document.getElementById('p1TagHeight').textContent = `${p1Data.height.toFixed(2)}m`;
+      document.getElementById('p1BtnName').textContent = capitalize(p1Data.name);
+      document.getElementById('p1IdBadge').textContent = `#${p1Data.id.toString().padStart(3, '0')}`;
+      document.getElementById('p1StatDetails').textContent = `📏 ${p1Data.height.toFixed(2)}m • ⚖️ ${p1Data.weight.toFixed(1)}kg`;
+
+      const p1Img = document.getElementById('p1Img');
+      p1Img.src = p1Data.sprite;
+      p1Img.style.setProperty('--trim-scale', p1Data.trimScale);
+      p1Img.style.setProperty('--trim-offset', `${p1Data.trimOffset}%`);
+      p1Img.style.setProperty('--flip-transform', p1Flipped ? 'scaleX(-1)' : 'scaleX(1)');
+
+      // P2
+      document.getElementById('p2TagName').textContent = capitalize(p2Data.name);
+      document.getElementById('p2TagHeight').textContent = `${p2Data.height.toFixed(2)}m`;
+      document.getElementById('p2BtnName').textContent = capitalize(p2Data.name);
+      document.getElementById('p2IdBadge').textContent = `#${p2Data.id.toString().padStart(3, '0')}`;
+      document.getElementById('p2StatDetails').textContent = `📏 ${p2Data.height.toFixed(2)}m • ⚖️ ${p2Data.weight.toFixed(1)}kg`;
+
+      const p2Img = document.getElementById('p2Img');
+      p2Img.src = p2Data.sprite;
+      p2Img.style.setProperty('--trim-scale', p2Data.trimScale);
+      p2Img.style.setProperty('--trim-offset', `${p2Data.trimOffset}%`);
+      p2Img.style.setProperty('--flip-transform', p2Flipped ? 'scaleX(-1)' : 'scaleX(1)');
+
+      // Humano
+      document.getElementById('humanTagHeight').textContent = `${humanHeight.toFixed(2)}m`;
+      document.getElementById('humanNumDisplay').textContent = `${humanHeight.toFixed(2)} m`;
+
+      // Insight
+      updateInsightText();
+    }
+
+    function updateInsightText() {
+      const box = document.getElementById('insightBox');
+      if (Math.abs(p2Data.height - humanHeight) < 0.05) {
+        box.innerHTML = `💡 <strong>${capitalize(p2Data.name)}</strong> (${p2Data.height}m) y <strong>Tú</strong> (${humanHeight}m) tienen exactamente la misma estatura.`;
+      } else if (p2Data.height > p1Data.height) {
+        const ratio = (p2Data.height / p1Data.height).toFixed(1);
+        box.innerHTML = `💡 <strong>${capitalize(p2Data.name)}</strong> (${p2Data.height}m) es <strong>${ratio}x</strong> más alto que <strong>${capitalize(p1Data.name)}</strong> (${p1Data.height}m).`;
+      } else {
+        const ratio = (p1Data.height / p2Data.height).toFixed(1);
+        box.innerHTML = `💡 <strong>${capitalize(p1Data.name)}</strong> (${p1Data.height}m) es <strong>${ratio}x</strong> más alto que <strong>${capitalize(p2Data.name)}</strong> (${p2Data.height}m).`;
+      }
+    }
+
+    // --- MOTOR DE ESCALADO VISUAL 1:1 ---
+    function renderArena() {
+      const arena = document.getElementById('arenaContainer');
+      const usableHeight = arena.clientHeight - 40; // Espacio libre sobre el suelo
+      const maxHeight = Math.max(p1Data.height, p2Data.height, humanHeight, 0.5);
+
+      // Calcular factor de escala (Píxeles por Metro)
+      let ppm;
+      if (currentMode === 'fit') {
+        ppm = (usableHeight * 0.78) / maxHeight;
+      } else {
+        ppm = (usableHeight * 0.55) / Math.min(maxHeight, 3.5);
+      }
+
+      // Aplicar alturas exactas en píxeles
+      document.getElementById('p1Scaler').style.height = `${p1Data.height * ppm}px`;
+      document.getElementById('p2Scaler').style.height = `${p2Data.height * ppm}px`;
+      document.getElementById('humanScaler').style.height = `${humanHeight * ppm}px`;
+
+      // Dibujar la regla métrica
+      drawRuler(maxHeight, ppm, usableHeight);
+    }
+
+    function drawRuler(maxHeight, ppm, usableHeight) {
+      const ruler = document.getElementById('fixedRuler');
+      const grid = document.getElementById('gridLinesLayer');
+      ruler.innerHTML = '';
+      grid.innerHTML = '';
+
+      let step = 0.5;
+      if (maxHeight > 3) step = 1.0;
+      if (maxHeight > 8) step = 2.0;
+      if (maxHeight > 15) step = 5.0;
+
+      const totalLines = Math.ceil((maxHeight * 1.25) / step);
+
+      for (let i = 1; i <= totalLines; i++) {
+        const meters = (i * step).toFixed(1);
+        const bottomPx = i * step * ppm;
+
+        if (bottomPx > usableHeight + 80) break;
+
+        // Número en la regla izquierda
+        const mark = document.createElement('div');
+        mark.className = 'grid-marker';
+        mark.style.bottom = `${bottomPx + 26}px`;
+        mark.textContent = `${meters}m`;
+        ruler.appendChild(mark);
+
+        // Línea horizontal
+        const line = document.createElement('div');
+        line.className = 'grid-line';
+        line.style.bottom = `${bottomPx}px`;
+        grid.appendChild(line);
+      }
+    }
+
+    // --- ACCIONES ---
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnFit').classList.toggle('active', mode === 'fit');
+      document.getElementById('btnFree').classList.toggle('active', mode === 'free');
+      
+      const arena = document.getElementById('arenaContainer');
+      arena.className = `arena-container mode-${mode}`;
+      renderArena();
+    }
+
+    function setHumanHeight(val) {
+      humanHeight = parseFloat(val);
+      updateUI();
+      renderArena();
+    }
+
+    function toggleFlip(slot) {
+      if (slot === 'p1') p1Flipped = !p1Flipped;
+      else p2Flipped = !p2Flipped;
+      updateUI();
+    }
+
+    function quickLoad(p1, p2) {
+      fetchPokemon(p1, 'left');
+      fetchPokemon(p2, 'right');
+    }
+
+    // --- BUSCADOR ---
+    function openSearchModal(slot) {
+      activeSlot = slot;
+      document.getElementById('modalTitle').textContent = `Elegir (${slot === 'left' ? 'Lado Izquierdo' : 'Lado Derecho'})`;
+      document.getElementById('searchModal').classList.add('open');
+      document.getElementById('searchInput').value = '';
+      filterDirectory('');
+      setTimeout(() => document.getElementById('searchInput').focus(), 100);
+    }
+
+    function closeSearchModal() {
+      document.getElementById('searchModal').classList.remove('open');
+    }
+
+    function filterDirectory(q) {
+      const list = document.getElementById('resultsGrid');
+      const query = q.toLowerCase().trim();
+      const filtered = directory.filter(p => p.name.includes(query) || p.id.toString() === query).slice(0, 30);
+
+      list.innerHTML = '';
+      filtered.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'poke-choice-btn';
+        btn.innerHTML = `
+          <img class="choice-thumb" src="${p.thumb}" alt="${p.name}">
+          <div>
+            <div style="font-weight:700; font-size:0.8rem; text-transform:capitalize;">${capitalize(p.name)}</div>
+            <div style="font-size:0.65rem; color:var(--text-muted);">#${p.id.toString().padStart(3, '0')}</div>
+          </div>
+        `;
+        btn.onclick = () => {
+          fetchPokemon(p.name, activeSlot);
+          closeSearchModal();
+        };
+        list.appendChild(btn);
+      });
+    }
+
+    function capitalize(s) {
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    }
+  </script>
+</body>
+</html>
