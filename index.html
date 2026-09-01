@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>PokéScale - Escala Real con GIFs y Sonido</title>
+  <title>PokéScale - Escala Real con GIFs y Modo HD</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,13 +45,15 @@
 
     /* HEADER */
     header {
-      padding: 10px 14px;
+      padding: 8px 12px;
       background: rgba(20, 28, 46, 0.95);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border-light);
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
+      gap: 6px;
       position: sticky;
       top: 0;
       z-index: 50;
@@ -60,12 +62,12 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .pokeball-logo {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       background: linear-gradient(to bottom, #ef4444 50%, #ffffff 50%);
       border-radius: 50%;
       border: 2px solid #0a0f1d;
@@ -77,8 +79,8 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       background: #ffffff;
       border: 2px solid #0a0f1d;
       border-radius: 50%;
@@ -87,7 +89,7 @@
     .brand-title {
       font-family: 'Outfit', sans-serif;
       font-weight: 900;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -96,7 +98,7 @@
     .header-controls {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .audio-btn {
@@ -104,8 +106,8 @@
       border: 1px solid var(--border-light);
       color: var(--text-muted);
       border-radius: 8px;
-      padding: 5px 8px;
-      font-size: 0.85rem;
+      padding: 4px 7px;
+      font-size: 0.8rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -119,9 +121,9 @@
 
     .view-toggles {
       display: flex;
-      gap: 4px;
+      gap: 2px;
       background: rgba(0, 0, 0, 0.35);
-      padding: 3px;
+      padding: 2px;
       border-radius: 8px;
       border: 1px solid var(--border-light);
     }
@@ -130,12 +132,13 @@
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      padding: 5px 10px;
+      padding: 4px 8px;
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
     }
     .toggle-btn.active {
       background: var(--bg-card);
@@ -253,7 +256,7 @@
       transition: height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
 
-    /* GIFS / SPRITES ANIMADOS */
+    /* IMÁGENES Y SPRITES */
     .pokemon-sprite-wrapper {
       position: relative;
       height: 100%;
@@ -271,7 +274,8 @@
       transform-origin: bottom center;
       filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
       pointer-events: none;
-      image-rendering: auto;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      opacity: 1;
     }
 
     /* SILUETA HUMANA */
@@ -553,20 +557,26 @@
     </div>
     
     <div class="header-controls">
-      <!-- Toggle de Sonido -->
+      <!-- Mute / Unmute -->
       <button class="audio-btn active" id="audioToggleBtn" title="Activar/Silenciar sonido" onclick="toggleAudio()">🔊</button>
+
+      <!-- Toggle Tipo de Sprite (GIF vs Imagen HD) -->
+      <div class="view-toggles" title="Alternar formato visual">
+        <button class="toggle-btn active" id="btnSpriteGif" onclick="setSpriteType('gif')">🎬 GIF</button>
+        <button class="toggle-btn" id="btnSpriteHd" onclick="setSpriteType('hd')">🖼️ HD</button>
+      </div>
       
-      <!-- Modos -->
+      <!-- Modos de Cámara -->
       <div class="view-toggles">
         <button class="toggle-btn active" id="btnFit" onclick="switchMode('fit')">📱 Ajuste</button>
-        <button class="toggle-btn" id="btnFree" onclick="switchMode('free')">🔍 Libre (1:1)</button>
+        <button class="toggle-btn" id="btnFree" onclick="switchMode('free')">🔍 1:1</button>
       </div>
     </div>
   </header>
 
   <!-- ARENA COMPARADORA -->
   <section class="arena-container mode-fit" id="arenaContainer">
-    <!-- Regla de Altura Fija a la Izquierda -->
+    <!-- Regla Fija Izquierda -->
     <div class="fixed-ruler" id="fixedRuler"></div>
 
     <!-- Malla de Líneas Métricas -->
@@ -595,7 +605,7 @@
               <span>Tú</span> <span id="humanTagHeight">1.70m</span>
             </div>
             <svg class="human-svg" viewBox="0 0 54 180" preserveAspectRatio="none">
-              <!-- Gorra / Cabeza (y: 0 a 30) -->
+              <!-- Cabeza (y: 0 a 30) -->
               <path d="M16,10 C16,3 38,3 38,10 C44,10 52,13 54,16 C46,16 40,14 34,16 C26,14 18,16 6,16 C10,13 13,10 16,10 Z" />
               <circle cx="27" cy="20" r="10" />
               <!-- Cuello y Torso (y: 30 a 90) -->
@@ -604,7 +614,7 @@
               <!-- Brazos (y: 36 a 96) -->
               <path d="M12,38 L4,72 L8,95 L5,96 L0,72 L8,36 Z" />
               <path d="M42,38 L50,72 L46,95 L49,96 L54,72 L46,36 Z" />
-              <!-- Piernas y Calzado (y: 90 a 180 exacto) -->
+              <!-- Piernas y Pies (y: 90 a 180 exacto) -->
               <path d="M18,90 L15,174 L6,176 L6,180 L25,180 L24,90 Z" />
               <path d="M36,90 L39,174 L48,176 L48,180 L29,180 L30,90 Z" />
             </svg>
@@ -687,6 +697,7 @@
       <button class="preset-pill" onclick="quickLoad('wailord', 'eternatus')">🐋 Wailord vs 🌌 Eternatus</button>
       <button class="preset-pill" onclick="quickLoad('joltik', 'onix')">🕷️ Joltik vs 🪨 Onix</button>
       <button class="preset-pill" onclick="quickLoad('gengar', 'lucario')">👻 Gengar vs 🥊 Lucario</button>
+      <button class="preset-pill" onclick="quickLoad('mewtwo', 'rayquaza')">🧬 Mewtwo vs 🐉 Rayquaza</button>
     </div>
 
   </main>
@@ -712,7 +723,7 @@
 
   <script>
     // ==========================================
-    // 🎵 MOTOR DE EFECTOS DE SONIDO (WEB AUDIO API)
+    // 🎵 MOTOR DE EFECTOS DE SONIDO (WEB AUDIO)
     // ==========================================
     class SoundEngine {
       constructor() {
@@ -731,7 +742,6 @@
         }
       }
 
-      // Tap / Pop Suave
       playTap() {
         if (this.muted) return;
         this.init();
@@ -755,13 +765,12 @@
         osc.stop(now + 0.05);
       }
 
-      // Selección con Chime agradable
       playSelect() {
         if (this.muted) return;
         this.init();
         if (!this.ctx) return;
 
-        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        const notes = [523.25, 659.25, 783.99]; // Acorde C5, E5, G5
         notes.forEach((freq, i) => {
           const now = this.ctx.currentTime + (i * 0.045);
           const osc = this.ctx.createOscillator();
@@ -781,7 +790,6 @@
         });
       }
 
-      // Giro / Flip
       playFlip() {
         if (this.muted) return;
         this.init();
@@ -805,7 +813,6 @@
         osc.stop(now + 0.09);
       }
 
-      // Abrir modal
       playOpen() {
         if (this.muted) return;
         this.init();
@@ -829,7 +836,6 @@
         osc.stop(now + 0.11);
       }
 
-      // Cerrar modal
       playClose() {
         if (this.muted) return;
         this.init();
@@ -853,11 +859,10 @@
         osc.stop(now + 0.09);
       }
 
-      // Tick háptico para el slider
       playTick() {
         if (this.muted) return;
         const nowMs = Date.now();
-        if (nowMs - this.lastTickTime < 45) return; // Throttle
+        if (nowMs - this.lastTickTime < 45) return;
         this.lastTickTime = nowMs;
 
         this.init();
@@ -880,7 +885,6 @@
         osc.stop(now + 0.02);
       }
 
-      // Reproducir el grito nativo del Pokémon
       playPokemonCry(cryUrl) {
         if (this.muted || !cryUrl) return;
         try {
@@ -912,13 +916,29 @@
     let directory = [];
     let activeSlot = 'left';
     let currentMode = 'fit';
+    let spriteType = 'gif'; // 'gif' o 'hd'
     let humanHeight = 1.70;
     
     let p1Flipped = false;
-    let p2Flipped = true; // Mirando al centro por defecto
+    let p2Flipped = true;
 
-    let p1Data = { name: 'pikachu', height: 0.40, weight: 6.0, id: 25, sprite: '', trimScale: 1, trimOffset: 0 };
-    let p2Data = { name: 'charizard', height: 1.70, weight: 90.5, id: 6, sprite: '', trimScale: 1, trimOffset: 0 };
+    let p1Data = {
+      name: 'pikachu',
+      height: 0.40,
+      weight: 6.0,
+      id: 25,
+      sprites: { gif: '', hd: '' },
+      trims: { gif: { trimScale: 1, trimOffset: 0 }, hd: { trimScale: 1, trimOffset: 0 } }
+    };
+
+    let p2Data = {
+      name: 'charizard',
+      height: 1.70,
+      weight: 90.5,
+      id: 6,
+      sprites: { gif: '', hd: '' },
+      trims: { gif: { trimScale: 1, trimOffset: 0 }, hd: { trimScale: 1, trimOffset: 0 } }
+    };
 
     // --- INICIO ---
     window.addEventListener('DOMContentLoaded', async () => {
@@ -928,7 +948,7 @@
       window.addEventListener('resize', renderArena);
     });
 
-    // --- CARGAR DIRECTORIO DE POKÉMON ---
+    // --- CARGAR DIRECTORIO POKÉMON ---
     async function loadDirectory() {
       try {
         const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
@@ -943,9 +963,14 @@
       }
     }
 
-    // --- RECORTE DE MÁRGENES TRANSPARENTES (CANVAS) ---
+    // --- ANALIZADOR DE BORDES TRANSPARENTES (CANVAS) ---
     function analyzeSpriteWhitespace(imgUrl) {
       return new Promise((resolve) => {
+        if (!imgUrl) {
+          resolve({ trimScale: 1, trimOffset: 0 });
+          return;
+        }
+
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.src = imgUrl;
@@ -993,7 +1018,7 @@
       });
     }
 
-    // --- OBTENER POKÉMON CON PRIORIDAD EN FORMATO GIF ---
+    // --- OBTENER POKÉMON CON IMAGEN HD Y GIF CACHEADOS ---
     async function fetchPokemon(nameOrId, slot, triggerCry = true) {
       try {
         const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nameOrId.toString().toLowerCase()}`);
@@ -1003,31 +1028,44 @@
         const heightM = data.height / 10;
         const weightKg = data.weight / 10;
 
-        // Selección del Sprite GIF Animado (Showdown > Gen V Animated > Arte Oficial > Sprite Clásico)
-        const spriteUrl = 
+        // 1. Sprite GIF Animado
+        const gifUrl = 
           data.sprites?.other?.showdown?.front_default ||
           data.sprites?.versions?.['generation-v']?.['black-white']?.animated?.front_default ||
           data.sprites?.other?.['official-artwork']?.front_default ||
           data.sprites?.front_default;
 
+        // 2. Sprite HD Oficial Estático
+        const hdUrl = 
+          data.sprites?.other?.['official-artwork']?.front_default ||
+          data.sprites?.other?.home?.front_default ||
+          data.sprites?.front_default;
+
         const cryUrl = data.cries?.latest || data.cries?.legacy || null;
 
-        // Si se permite sonido, reproducir el grito nativo
         if (triggerCry && cryUrl) {
           sound.playPokemonCry(cryUrl);
         }
 
-        // Análisis de bordes transparentes
-        const { trimScale, trimOffset } = await analyzeSpriteWhitespace(spriteUrl);
+        // Analizar espacios vacíos de ambos para cambio instantáneo
+        const [trimGif, trimHd] = await Promise.all([
+          analyzeSpriteWhitespace(gifUrl),
+          analyzeSpriteWhitespace(hdUrl)
+        ]);
 
         const pokeObj = {
           name: data.name,
           height: heightM,
           weight: weightKg,
           id: data.id,
-          sprite: spriteUrl,
-          trimScale,
-          trimOffset
+          sprites: {
+            gif: gifUrl,
+            hd: hdUrl
+          },
+          trims: {
+            gif: trimGif,
+            hd: trimHd
+          }
         };
 
         if (slot === 'left') p1Data = pokeObj;
@@ -1040,9 +1078,25 @@
       }
     }
 
-    // --- ACTUALIZAR TEXTOS Y ESTILOS ---
+    // --- CONTROL DE TIPO DE SPRITE (GIF / HD) ---
+    function setSpriteType(type) {
+      if (spriteType === type) return;
+      sound.playTap();
+      spriteType = type;
+
+      document.getElementById('btnSpriteGif').classList.toggle('active', type === 'gif');
+      document.getElementById('btnSpriteHd').classList.toggle('active', type === 'hd');
+
+      updateUI();
+      renderArena();
+    }
+
+    // --- ACTUALIZAR INTERFAZ ---
     function updateUI() {
-      // P1
+      // Configuración de P1
+      const p1CurrentSprite = p1Data.sprites[spriteType] || p1Data.sprites.hd;
+      const p1CurrentTrim = p1Data.trims[spriteType] || { trimScale: 1, trimOffset: 0 };
+
       document.getElementById('p1TagName').textContent = capitalize(p1Data.name);
       document.getElementById('p1TagHeight').textContent = `${p1Data.height.toFixed(2)}m`;
       document.getElementById('p1BtnName').textContent = capitalize(p1Data.name);
@@ -1050,12 +1104,15 @@
       document.getElementById('p1StatDetails').textContent = `📏 ${p1Data.height.toFixed(2)}m • ⚖️ ${p1Data.weight.toFixed(1)}kg`;
 
       const p1Img = document.getElementById('p1Img');
-      p1Img.src = p1Data.sprite;
-      p1Img.style.setProperty('--trim-scale', p1Data.trimScale);
-      p1Img.style.setProperty('--trim-offset', `${p1Data.trimOffset}%`);
+      p1Img.src = p1CurrentSprite;
+      p1Img.style.setProperty('--trim-scale', p1CurrentTrim.trimScale);
+      p1Img.style.setProperty('--trim-offset', `${p1CurrentTrim.trimOffset}%`);
       p1Img.style.setProperty('--flip-transform', p1Flipped ? 'scaleX(-1)' : 'scaleX(1)');
 
-      // P2
+      // Configuración de P2
+      const p2CurrentSprite = p2Data.sprites[spriteType] || p2Data.sprites.hd;
+      const p2CurrentTrim = p2Data.trims[spriteType] || { trimScale: 1, trimOffset: 0 };
+
       document.getElementById('p2TagName').textContent = capitalize(p2Data.name);
       document.getElementById('p2TagHeight').textContent = `${p2Data.height.toFixed(2)}m`;
       document.getElementById('p2BtnName').textContent = capitalize(p2Data.name);
@@ -1063,9 +1120,9 @@
       document.getElementById('p2StatDetails').textContent = `📏 ${p2Data.height.toFixed(2)}m • ⚖️ ${p2Data.weight.toFixed(1)}kg`;
 
       const p2Img = document.getElementById('p2Img');
-      p2Img.src = p2Data.sprite;
-      p2Img.style.setProperty('--trim-scale', p2Data.trimScale);
-      p2Img.style.setProperty('--trim-offset', `${p2Data.trimOffset}%`);
+      p2Img.src = p2CurrentSprite;
+      p2Img.style.setProperty('--trim-scale', p2CurrentTrim.trimScale);
+      p2Img.style.setProperty('--trim-offset', `${p2CurrentTrim.trimOffset}%`);
       p2Img.style.setProperty('--flip-transform', p2Flipped ? 'scaleX(-1)' : 'scaleX(1)');
 
       // Humano
@@ -1140,7 +1197,7 @@
       }
     }
 
-    // --- ACCIONES Y SONIDOS ---
+    // --- ACCIONES DE USUARIO ---
     function switchMode(mode) {
       sound.playTap();
       currentMode = mode;
@@ -1172,7 +1229,7 @@
       fetchPokemon(p2, 'right', false);
     }
 
-    // --- BUSCADOR ---
+    // --- BUSCADOR MODAL ---
     function openSearchModal(slot) {
       sound.playOpen();
       activeSlot = slot;
